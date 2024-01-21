@@ -26,8 +26,8 @@ data Instruction
    | InstructionFieldWrite FieldWriteContent
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-data TmpVariableContent
-   = TmpVariableContent
+data TmpVariable
+   = TmpVariable
      {
          tmpVariableLocation :: Location,
          tmpVariableSerialIdx :: Integer
@@ -42,7 +42,7 @@ data SrcVariableContent
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data Variable
-   = TmpVariable TmpVariableContent
+   = TmpVariableCtor TmpVariable
    | SrcVariable SrcVariableContent
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
