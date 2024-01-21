@@ -13,18 +13,29 @@ import Data.Aeson
 import GHC.Generics
 
 data Instruction
-   = InstructionNop NopContent
-   | InstructionCall CallContent
-   | InstructionUnop UnopContent
-   | InstructionBinop BinopContent
-   | InstructionAssume AssumeContent
-   | InstructionReturn ReturnContent
-   | InstructionAssign AssignContent
-   | InstructionLoadImm LoadImmContent
-   | InstructionParamDecl ParamDeclContent
-   | InstructionFieldRead FieldReadContent
-   | InstructionFieldWrite FieldWriteContent
+   = Instruction
+     {
+         location :: Location,
+         instructionContent :: InstructionContent
+     }
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+data InstructionContent
+   = Nop
+   | Call CallContent
+   | Unop UnopContent
+   | Binop BinopContent
+   | AssumeCtor Assume
+   | Return ReturnContent
+   | Assign AssignContent
+   | LoadImm LoadImmContent
+   | ParamDecl ParamDeclContent
+   | FieldRead FieldReadContent
+   | FieldWrite FieldWriteContent
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+mkNopInstruction :: Location -> Instruction
+mkNopInstruction l = Instruction { location = l, instructionContent = Nop }
 
 data TmpVariable
    = TmpVariable
@@ -34,24 +45,22 @@ data TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-data SrcVariableContent
-   = SrcVariableContent
+data SrcVariable
+   = SrcVariable
      {
-         srcVariableName :: Token.VarName
+         srcVariableToken :: Token.VarName
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data Variable
    = TmpVariableCtor TmpVariable
-   | SrcVariable SrcVariableContent
+   | SrcVariableCtor SrcVariable
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-data NopContent
-   = NopContent
-     {
-         nopContentLocation :: Location
-     }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+locationVariable :: Variable -> Location
+locationVariable v = case v of
+    (TmpVariableCtor tmpVariable) -> tmpVariableLocation tmpVariable
+    (SrcVariableCtor srcVariable) -> Token.getSrcVariableLocation $ srcVariableToken srcVariable
 
 data Arg
    = ArgPlain Integer
@@ -84,12 +93,19 @@ data UnopContent
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-data AssumeContent
-   = AssumeContent
+data Assume
+   = Assume
      {
-         assumedVariable :: Variable
+         assumeTmpVariable :: TmpVariable,
+         assumedValue :: Bool
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+mkAssumeInstruction :: TmpVariable -> Bool -> Instruction
+mkAssumeInstruction tmpVariable value = Instruction { location = l, instructionContent = assume }
+    where
+        l = tmpVariableLocation tmpVariable
+        assume = AssumeCtor $ Assume { assumeTmpVariable = tmpVariable, assumedValue = value }
 
 data ReturnContent
    = ReturnContent
