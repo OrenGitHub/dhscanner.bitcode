@@ -19,3 +19,10 @@ data Callable
          cfg :: Cfg
      }
      deriving ( Show, Generic, ToJSON, FromJSON )
+
+data Callables
+   = Callables
+     {
+         actualCallables :: [ Callable ]
+     }
+     deriving ( Show, Generic, ToJSON, FromJSON )
