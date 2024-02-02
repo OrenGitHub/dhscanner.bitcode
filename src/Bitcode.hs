@@ -60,7 +60,7 @@ data Variable
 locationVariable :: Variable -> Location
 locationVariable v = case v of
     (TmpVariableCtor tmpVariable) -> tmpVariableLocation tmpVariable
-    (SrcVariableCtor srcVariable) -> Token.getSrcVariableLocation $ srcVariableToken srcVariable
+    (SrcVariableCtor srcVariable) -> Token.getVarNameLocation $ srcVariableToken srcVariable
 
 data Arg
    = ArgPlain Integer
