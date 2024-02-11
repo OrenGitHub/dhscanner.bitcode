@@ -28,7 +28,7 @@ data Nodes
      {
          actualNodes :: Set Node
      }
-     deriving ( Show )
+     deriving ( Show, Eq, Ord )
 
 data Edge
    = Edge
@@ -43,7 +43,7 @@ data Edges
      {
          actualEdges :: Set Edge
      }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON )
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 mkEmptyCollectionOfEdges :: Edges
 mkEmptyCollectionOfEdges = Edges { actualEdges = fromList [] }
