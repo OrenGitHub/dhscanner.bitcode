@@ -53,7 +53,6 @@ data Cfg
      {
          entry :: Node,
          exit  :: Node,
-         location :: Location,
          edges :: Edges
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON )
@@ -69,14 +68,14 @@ preds node g = Nodes { actualNodes = map from edges' }
     where
         edges' = filter (\e -> (to e) == node) (actualEdges (edges g))    
 
-atom :: Node -> Cfg
-atom node = Cfg { entry = node, exit = node, location = l, edges = edges' }
-    where
-        edges' = mkEmptyCollectionOfEdges
-        l = Bitcode.location (theInstructionInside node)
+empty :: Location -> Cfg
+empty location = atom (Node (Bitcode.Instruction location Bitcode.Nop))
 
-concat :: Cfg -> Cfg -> Location -> Cfg
-concat g1 g2 l = Cfg { entry = entry g1, exit = exit g2, location = l, edges = edges' }
+atom :: Node -> Cfg
+atom node = Cfg { entry = node, exit = node, edges = mkEmptyCollectionOfEdges }
+
+concat :: Cfg -> Cfg -> Cfg
+concat g1 g2 = Cfg { entry = entry g1, exit = exit g2, edges = edges' }
     where
         edges' = Edges $ edges1 `union` edges2 `union` connector
             where
@@ -84,11 +83,11 @@ concat g1 g2 l = Cfg { entry = entry g1, exit = exit g2, location = l, edges = e
                 edges2 = actualEdges $ edges g2
                 connector = fromList [Edge { from = exit g1, to = entry g2 }]
 
-parallel :: Cfg -> Cfg -> Location -> Cfg
-parallel g1 g2 l = Cfg { entry = s, exit = t, location = l, edges = edges' }
+parallel :: Cfg -> Cfg -> Cfg
+parallel g1 g2 = Cfg { entry = s, exit = t, edges = edges' }
     where
-        s = Node $ Bitcode.mkNopInstruction l
-        t = Node $ Bitcode.mkNopInstruction l
+        s = Node $ Bitcode.mkNopInstruction (Bitcode.location (theInstructionInside (entry g1)))
+        t = Node $ Bitcode.mkNopInstruction (Bitcode.location (theInstructionInside (exit  g2)))
         edges' = Edges $ edges1 `union` edges2 `union` connectors
             where
                 edges1 = actualEdges $ edges g1
@@ -101,10 +100,10 @@ parallel g1 g2 l = Cfg { entry = s, exit = t, location = l, edges = edges' }
                         g2_t = Edge { from = entry g2, to = t }
 
 -- | create a loop from condition and body
-loopify :: Cfg -> Cfg -> Bitcode.TmpVariable -> Location -> Cfg
-loopify cond body guardedValue l = Cfg { entry = entry cond, exit = t, location = l, edges = edges' }
+loopify :: Cfg -> Cfg -> Bitcode.TmpVariable -> Cfg
+loopify cond body guardedValue = Cfg { entry = entry cond, exit = t, edges = edges' }
     where
-        t = Node $ Bitcode.mkNopInstruction l
+        t = Node $ Bitcode.mkNopInstruction (Bitcode.tmpVariableLocation guardedValue)
         edges' = Edges $ edges1 `union` edges2 `union` connectors
             where
                 edges1 = actualEdges $ edges cond
