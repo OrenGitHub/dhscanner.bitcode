@@ -137,7 +137,7 @@ mkAssumeInstruction tmpVariable value = Instruction { location = l, instructionC
 data ReturnContent
    = ReturnContent
      {
-         returnValue :: Maybe Variable
+         returnValue :: Maybe TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
