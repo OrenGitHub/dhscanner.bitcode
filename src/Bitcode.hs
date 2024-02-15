@@ -8,6 +8,7 @@ where
 
 -- project imports
 import Location
+import ActualType
 import qualified Token
 
 -- general imports
@@ -46,8 +47,8 @@ mkNopInstruction l = Instruction { location = l, instructionContent = Nop }
 data TmpVariable
    = TmpVariable
      {
-         tmpVariableLocation :: Location,
-         tmpVariableSerialIdx :: Integer
+         actualType :: ActualType,
+         tmpVariableLocation :: Location
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
@@ -90,32 +91,32 @@ data Arg
 data CallContent
    = CallContent
      {
-         callOutput :: Variable,
-         callee :: Variable,
+         callOutput :: TmpVariable,
+         callee :: TmpVariable,
          args :: [ Arg ]
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-callInputs :: CallContent -> [ Variable ]
+callInputs :: CallContent -> [ TmpVariable ]
 callInputs callContent = []
 
 data BinopContent
    = BinopContent
      {
-         binopOutput :: Variable,
-         binopLhs :: Variable,
-         binopRhs :: Variable
+         binopOutput :: TmpVariable,
+         binopLhs :: TmpVariable,
+         binopRhs :: TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-binopInputs :: BinopContent -> [ Variable ]
+binopInputs :: BinopContent -> [ TmpVariable ]
 binopInputs binopContent = [ binopLhs binopContent, binopRhs binopContent ]
 
 data UnopContent
    = UnopContent
      {
-         unopOutput :: Variable,
-         unopLhs :: Variable
+         unopOutput :: TmpVariable,
+         unopLhs :: TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -144,21 +145,21 @@ data AssignContent
    = AssignContent
      {
          assignOutput :: Variable,
-         assignInput :: Variable
+         assignInput :: TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data LoadImmContent
-   = LoadImmContentInt Integer
-   | LoadImmContentStr String
-   | LoadImmContentBool Bool
+   = LoadImmContentInt TmpVariable Token.ConstInt
+   | LoadImmContentStr TmpVariable String
+   | LoadImmContentBool TmpVariable Bool
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data FieldReadContent
    = FieldReadContent
      {
-         fieldReadOutput :: Variable,
-         fieldReadInput :: Variable,
+         fieldReadOutput :: TmpVariable,
+         fieldReadInput :: TmpVariable,
          fieldReadName :: Token.FieldName
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
@@ -166,9 +167,9 @@ data FieldReadContent
 data FieldWriteContent
    = FieldWriteContent
      {
-         fieldWriteOutput :: Variable,
+         fieldWriteOutput :: TmpVariable,
          fieldWriteName :: Token.FieldName,
-         fieldWriteInput :: Variable
+         fieldWriteInput :: TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -184,17 +185,17 @@ data ParamDeclContent
 -- some instructions don't have an output variable
 -- at any case, there is at most one output (unlike inputs)
 output :: InstructionContent -> Maybe Variable
-output (Call       c) = Just $ callOutput       c
-output (Unop       c) = Just $ unopLhs          c
-output (Binop      c) = Just $ binopOutput      c
-output (Assign     c) = Just $ assignOutput     c
-output (FieldRead  c) = Just $ fieldReadOutput  c
-output (FieldWrite c) = Just $ fieldWriteOutput c
+output (Call       c) = Just $ TmpVariableCtor $ callOutput       c
+output (Unop       c) = Just $ TmpVariableCtor $ unopLhs          c
+output (Binop      c) = Just $ TmpVariableCtor $ binopOutput      c
+output (Assign     c) = Just $                   assignOutput     c
+output (FieldRead  c) = Just $ TmpVariableCtor $ fieldReadOutput  c
+output (FieldWrite c) = Just $ TmpVariableCtor $ fieldWriteOutput c
 output _              = Nothing
 
 -- some instructions don't have an input variable
 -- there can be /multiple/ input variables to an instruction
-inputs :: InstructionContent -> Set Variable
+inputs :: InstructionContent -> Set TmpVariable
 inputs (Call       c) = Data.Set.fromList  $ callInputs       c
 inputs (Binop      c) = Data.Set.fromList  $ binopInputs      c
 inputs (Unop       c) = Data.Set.singleton $ unopLhs          c
@@ -203,8 +204,11 @@ inputs (FieldRead  c) = Data.Set.singleton $ fieldReadInput   c
 inputs (FieldWrite c) = Data.Set.singleton $ fieldWriteOutput c
 inputs              _ = Data.Set.empty
 
+inputs' :: InstructionContent -> Set Variable
+inputs' = (Data.Set.map TmpVariableCtor) . inputs
+
 variables :: InstructionContent -> Set Variable
 variables instruction = case output instruction of
-    Nothing -> inputs instruction
-    Just output' -> (Data.Set.singleton output') `Data.Set.union` (inputs instruction)
+    Nothing -> inputs' instruction
+    Just output' -> (Data.Set.singleton output') `Data.Set.union` (inputs' instruction)
 
