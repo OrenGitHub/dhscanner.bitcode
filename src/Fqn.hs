@@ -3,14 +3,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Fqn
+
 where
 
+-- project imports
+import ActualType
+
+-- general imports
 import Data.Aeson
 import GHC.Generics
 
-data Fqn
-   = Fqn
-     {
-         content :: String
-     }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON )
+-- | Fully qualified name
+data Fqn = Fqn { content :: String } deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+nativeInt :: Fqn
+nativeInt = Fqn { content = "int" }
+
+nativeStr :: Fqn
+nativeStr = Fqn { content = "str" }
+
+convertFrom :: ActualType -> Fqn
+convertFrom  = Fqn . show
