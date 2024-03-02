@@ -7,8 +7,8 @@ module Bitcode
 where
 
 -- project imports
+import Fqn
 import Location
-import ActualType
 import qualified Token
 
 -- general imports
@@ -19,6 +19,11 @@ import Data.Set ( Set )
 -- general (qualified) imports
 import qualified Data.Set
 
+-- |
+-- * All instructions have an associated location
+--
+-- * That is true also for instrumented instructions (like `Nop` and `Assume`)
+--
 data Instruction
    = Instruction
      {
@@ -27,6 +32,8 @@ data Instruction
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
+-- | A minimal instruction set to translate /any/ programming language
+-- to an intermediate langauge ready for static analysis
 data InstructionContent
    = Nop
    | Call CallContent
@@ -47,7 +54,7 @@ mkNopInstruction l = Instruction { location = l, instructionContent = Nop }
 data TmpVariable
    = TmpVariable
      {
-         actualType :: ActualType,
+         tmpVariableFqn :: Fqn,
          tmpVariableLocation :: Location
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
@@ -55,6 +62,7 @@ data TmpVariable
 data SrcVariable
    = SrcVariable
      {
+         srcVariableFqn :: Fqn,
          srcVariableToken :: Token.VarName
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
@@ -64,19 +72,17 @@ data Variable
    | SrcVariableCtor SrcVariable
    deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
-data Variables
-   = Variables
-     {
-         actualVariables :: Set Variable
-     }
-     deriving ( Show, Eq, Ord )
+-- | Can /not/ be serialized to JSON
+data Variables = Variables { actualVariables :: Set Variable } deriving ( Show, Eq, Ord )
 
-data TmpVariables
-   = TmpVariables
-     {
-         actualTmpVariables :: Set TmpVariable
-     }
-     deriving ( Show, Eq, Ord )
+data SrcVariables = SrcVariables { actualSrcVariables :: Set SrcVariable } deriving ( Show, Eq, Ord )
+
+-- | Creating an empty collection of global variables
+createEmptyCollectionOfGlobalVariables :: SrcVariables
+createEmptyCollectionOfGlobalVariables = SrcVariables { actualSrcVariables = Data.Set.empty }
+ 
+-- | Can /not/ be serialized to JSON
+data TmpVariables = TmpVariables { actualTmpVariables :: Set TmpVariable } deriving ( Show, Eq, Ord )
 
 locationVariable :: Variable -> Location
 locationVariable v = case v of
