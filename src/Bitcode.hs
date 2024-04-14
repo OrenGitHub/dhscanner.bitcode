@@ -6,52 +6,88 @@ module Bitcode
 
 where
 
+-- project imports
+import Fqn
 import Location
 import qualified Token
 
+-- general imports
 import Data.Aeson
 import GHC.Generics
+import Data.Set ( Set )
 
+-- general (qualified) imports
+import qualified Data.Set
+
+-- |
+-- * All instructions have an associated location
+--
+-- * That is true also for instrumented instructions (like `Nop` and `Assume`)
+--
 data Instruction
-   = InstructionNop NopContent
-   | InstructionCall CallContent
-   | InstructionUnop UnopContent
-   | InstructionBinop BinopContent
-   | InstructionAssume AssumeContent
-   | InstructionReturn ReturnContent
-   | InstructionAssign AssignContent
-   | InstructionLoadImm LoadImmContent
-   | InstructionParamDecl ParamDeclContent
-   | InstructionFieldRead FieldReadContent
-   | InstructionFieldWrite FieldWriteContent
+   = Instruction
+     {
+         location :: Location,
+         instructionContent :: InstructionContent
+     }
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+-- | A minimal instruction set to translate /any/ programming language
+-- to an intermediate langauge ready for static analysis
+data InstructionContent
+   = Nop
+   | Call CallContent
+   | Unop UnopContent
+   | Binop BinopContent
+   | Assume AssumeContent
+   | Return ReturnContent
+   | Assign AssignContent
+   | LoadImm LoadImmContent
+   | ParamDecl ParamDeclContent
+   | FieldRead FieldReadContent
+   | FieldWrite FieldWriteContent
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+mkNopInstruction :: Location -> Instruction
+mkNopInstruction l = Instruction { location = l, instructionContent = Nop }
 
 data TmpVariable
    = TmpVariable
      {
-         tmpVariableLocation :: Location,
-         tmpVariableSerialIdx :: Integer
+         tmpVariableFqn :: Fqn,
+         tmpVariableLocation :: Location
      }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
-data SrcVariableContent
-   = SrcVariableContent
+data SrcVariable
+   = SrcVariable
      {
-         srcVariableName :: Token.VarName
+         srcVariableFqn :: Fqn,
+         srcVariableToken :: Token.VarName
      }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 data Variable
    = TmpVariableCtor TmpVariable
-   | SrcVariable SrcVariableContent
-   deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+   | SrcVariableCtor SrcVariable
+   deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
-data NopContent
-   = NopContent
-     {
-         nopContentLocation :: Location
-     }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+-- | Can /not/ be serialized to JSON
+data Variables = Variables { actualVariables :: Set Variable } deriving ( Show, Eq, Ord )
+
+data SrcVariables = SrcVariables { actualSrcVariables :: Set SrcVariable } deriving ( Show, Eq, Ord )
+
+-- | Creating an empty collection of global variables
+createEmptyCollectionOfGlobalVariables :: SrcVariables
+createEmptyCollectionOfGlobalVariables = SrcVariables { actualSrcVariables = Data.Set.empty }
+ 
+-- | Can /not/ be serialized to JSON
+data TmpVariables = TmpVariables { actualTmpVariables :: Set TmpVariable } deriving ( Show, Eq, Ord )
+
+locationVariable :: Variable -> Location
+locationVariable v = case v of
+    (TmpVariableCtor tmpVariable) -> tmpVariableLocation tmpVariable
+    (SrcVariableCtor srcVariable) -> Token.getVarNameLocation $ srcVariableToken srcVariable
 
 data Arg
    = ArgPlain Integer
@@ -61,40 +97,53 @@ data Arg
 data CallContent
    = CallContent
      {
-         callOutput :: Variable,
-         callee :: Variable,
+         callOutput :: TmpVariable,
+         callee :: TmpVariable,
          args :: [ Arg ]
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
+callInputs :: CallContent -> [ TmpVariable ]
+callInputs callContent = []
+
 data BinopContent
    = BinopContent
      {
-         binopOutput :: Variable,
-         binopLhs :: Variable,
-         binopRhs :: Variable
+         binopOutput :: TmpVariable,
+         binopLhs :: TmpVariable,
+         binopRhs :: TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+binopInputs :: BinopContent -> [ TmpVariable ]
+binopInputs binopContent = [ binopLhs binopContent, binopRhs binopContent ]
 
 data UnopContent
    = UnopContent
      {
-         unopOutput :: Variable,
-         unopLhs :: Variable
+         unopOutput :: TmpVariable,
+         unopLhs :: TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data AssumeContent
    = AssumeContent
      {
-         assumedVariable :: Variable
+         assumeTmpVariable :: TmpVariable,
+         assumedValue :: Bool
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+mkAssumeInstruction :: TmpVariable -> Bool -> Instruction
+mkAssumeInstruction tmpVariable value = Instruction { location = l, instructionContent = assume }
+    where
+        l = tmpVariableLocation tmpVariable
+        assume = Assume $ AssumeContent { assumeTmpVariable = tmpVariable, assumedValue = value }
 
 data ReturnContent
    = ReturnContent
      {
-         returnValue :: Maybe Variable
+         returnValue :: Maybe TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -102,21 +151,21 @@ data AssignContent
    = AssignContent
      {
          assignOutput :: Variable,
-         assignInput :: Variable
+         assignInput :: TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data LoadImmContent
-   = LoadImmContentInt Integer
-   | LoadImmContentStr String
-   | LoadImmContentBool Bool
+   = LoadImmContentInt TmpVariable Token.ConstInt
+   | LoadImmContentStr TmpVariable String
+   | LoadImmContentBool TmpVariable Bool
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data FieldReadContent
    = FieldReadContent
      {
-         fieldReadOutput :: Variable,
-         fieldReadInput :: Variable,
+         fieldReadOutput :: TmpVariable,
+         fieldReadInput :: TmpVariable,
          fieldReadName :: Token.FieldName
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
@@ -124,9 +173,9 @@ data FieldReadContent
 data FieldWriteContent
    = FieldWriteContent
      {
-         fieldWriteOutput :: Variable,
+         fieldWriteOutput :: TmpVariable,
          fieldWriteName :: Token.FieldName,
-         fieldWriteInput :: Variable
+         fieldWriteInput :: TmpVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -138,4 +187,34 @@ data ParamDeclContent
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
+
+-- some instructions don't have an output variable
+-- at any case, there is at most one output (unlike inputs)
+output :: InstructionContent -> Maybe Variable
+output (Call       c) = Just $ TmpVariableCtor $ callOutput       c
+output (Unop       c) = Just $ TmpVariableCtor $ unopLhs          c
+output (Binop      c) = Just $ TmpVariableCtor $ binopOutput      c
+output (Assign     c) = Just $                   assignOutput     c
+output (FieldRead  c) = Just $ TmpVariableCtor $ fieldReadOutput  c
+output (FieldWrite c) = Just $ TmpVariableCtor $ fieldWriteOutput c
+output _              = Nothing
+
+-- some instructions don't have an input variable
+-- there can be /multiple/ input variables to an instruction
+inputs :: InstructionContent -> Set TmpVariable
+inputs (Call       c) = Data.Set.fromList  $ callInputs       c
+inputs (Binop      c) = Data.Set.fromList  $ binopInputs      c
+inputs (Unop       c) = Data.Set.singleton $ unopLhs          c
+inputs (Assign     c) = Data.Set.singleton $ assignInput      c
+inputs (FieldRead  c) = Data.Set.singleton $ fieldReadInput   c
+inputs (FieldWrite c) = Data.Set.singleton $ fieldWriteOutput c
+inputs              _ = Data.Set.empty
+
+inputs' :: InstructionContent -> Set Variable
+inputs' = (Data.Set.map TmpVariableCtor) . inputs
+
+variables :: InstructionContent -> Set Variable
+variables instruction = case output instruction of
+    Nothing -> inputs' instruction
+    Just output' -> (Data.Set.singleton output') `Data.Set.union` (inputs' instruction)
 
