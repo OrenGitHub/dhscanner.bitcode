@@ -1,24 +1,34 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Cfg
 
 where
 
+-- project imports
+import Location
 import qualified Bitcode
+
+-- general imports
+import Data.Aeson
+import GHC.Generics hiding ( from, to )
 import Prelude hiding ( filter, map )
-import Data.Set ( Set, fromList, filter, map )
+import Data.Set ( Set, fromList, filter, map, union )
 
 data Node
    = Node
      {
-         instruction :: Bitcode.Instruction
+         theInstructionInside :: Bitcode.Instruction
      }
-     deriving ( Show, Ord, Eq )
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 data Nodes
    = Nodes
      {
          actualNodes :: Set Node
      }
-     deriving ( Show )
+     deriving ( Show, Eq, Ord )
 
 data Edge
    = Edge
@@ -26,14 +36,14 @@ data Edge
          from :: Node,
          to   :: Node
      }
-     deriving ( Show )
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 data Edges
    = Edges
      {
          actualEdges :: Set Edge
      }
-     deriving ( Show )
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 mkEmptyCollectionOfEdges :: Edges
 mkEmptyCollectionOfEdges = Edges { actualEdges = fromList [] }
@@ -45,19 +55,24 @@ data Cfg
          exit  :: Node,
          edges :: Edges
      }
-     deriving ( Show )
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON )
 
 nodes :: Cfg -> Nodes
-nodes g = Nodes { actualNodes = (map from (edges g)) `union` (map to (edges g)) }
+nodes g = Nodes { actualNodes = nodes' `union` nodes'' }
+    where
+        nodes'  = map from (actualEdges (edges g))
+        nodes'' = map to   (actualEdges (edges g))
 
 preds :: Node -> Cfg -> Nodes
 preds node g = Nodes { actualNodes = map from edges' }
     where
         edges' = filter (\e -> (to e) == node) (actualEdges (edges g))    
 
+empty :: Location -> Cfg
+empty location = atom (Node (Bitcode.Instruction location Bitcode.Nop))
+
 atom :: Node -> Cfg
-atom node = Cfg { entry = node, exit = node, edges = edges' }
-    where edges' = mkEmptyCollectionOfEdges
+atom node = Cfg { entry = node, exit = node, edges = mkEmptyCollectionOfEdges }
 
 concat :: Cfg -> Cfg -> Cfg
 concat g1 g2 = Cfg { entry = entry g1, exit = exit g2, edges = edges' }
@@ -71,8 +86,8 @@ concat g1 g2 = Cfg { entry = entry g1, exit = exit g2, edges = edges' }
 parallel :: Cfg -> Cfg -> Cfg
 parallel g1 g2 = Cfg { entry = s, exit = t, edges = edges' }
     where
-        s = Bitcode.Nop
-        t = Bitcode.Nop
+        s = Node $ Bitcode.mkNopInstruction (Bitcode.location (theInstructionInside (entry g1)))
+        t = Node $ Bitcode.mkNopInstruction (Bitcode.location (theInstructionInside (exit  g2)))
         edges' = Edges $ edges1 `union` edges2 `union` connectors
             where
                 edges1 = actualEdges $ edges g1
@@ -86,21 +101,17 @@ parallel g1 g2 = Cfg { entry = s, exit = t, edges = edges' }
 
 -- | create a loop from condition and body
 loopify :: Cfg -> Cfg -> Bitcode.TmpVariable -> Cfg
-loopify cond body guardedValue = Cfg { entry = s, exit = t, edges = edges' }
+loopify cond body guardedValue = Cfg { entry = entry cond, exit = t, edges = edges' }
     where
-        s = Bitcode.Nop
-        t = Bitcode.Nop
+        t = Node $ Bitcode.mkNopInstruction (Bitcode.tmpVariableLocation guardedValue)
         edges' = Edges $ edges1 `union` edges2 `union` connectors
             where
                 edges1 = actualEdges $ edges cond
                 edges2 = actualEdges $ edges body
-                connectors = fromList [
-                    Edge { from = exit cond, to = guardedValueIsTrue },
-                    Edge { from = exit cond, to = guardedValueIsFalse }
-                    Edge { from = guardedValueIsTrue, to = entry body },
-                    Edge { from = guardedValueIsFalse, to = t },
-                    Edge { from = exit body, to = entry cond }
-                ]
+                connectors = fromList [ e1, e2, e3, e4, e5 ]
                     where
-                        guardedValueIsTrue = Bitcode.Assume guardedValue True                       
-                        guardedValueIsFalse = Bitcode.Assume guardedValue False
+                        e1 = Edge { from = exit cond, to = Node $ Bitcode.mkAssumeInstruction guardedValue True }
+                        e2 = Edge { from = exit cond, to = Node $ Bitcode.mkAssumeInstruction guardedValue False }
+                        e3 = Edge { from = Node $ Bitcode.mkAssumeInstruction guardedValue True, to = entry body }
+                        e4 = Edge { from = Node $ Bitcode.mkAssumeInstruction guardedValue False, to = t }
+                        e5 = Edge { from = exit body, to = entry cond }
