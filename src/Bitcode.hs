@@ -89,17 +89,12 @@ locationVariable v = case v of
     (TmpVariableCtor tmpVariable) -> tmpVariableLocation tmpVariable
     (SrcVariableCtor srcVariable) -> Token.getVarNameLocation $ srcVariableToken srcVariable
 
-data Arg
-   = ArgPlain Integer
-   | ArgKeyword Integer
-   deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord ) 
-
 data CallContent
    = CallContent
      {
          callOutput :: TmpVariable,
          callee :: TmpVariable,
-         args :: [ Arg ]
+         args :: [ TmpVariable ]
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
