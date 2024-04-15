@@ -16,6 +16,10 @@ import GHC.Generics
 -- | Fully qualified name
 data Fqn = Fqn { content :: String } deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
+fromActualType :: ActualType -> Fqn
+fromActualType (ThirdPartyImport (ThirdPartyImportContent name)) = Fqn name
+fromActualType _ = nativeInt
+
 nativeInt :: Fqn
 nativeInt = Fqn { content = "int" }
 
