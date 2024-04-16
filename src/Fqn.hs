@@ -20,6 +20,9 @@ fromActualType :: ActualType -> Fqn
 fromActualType (ThirdPartyImport (ThirdPartyImportContent name)) = Fqn name
 fromActualType _ = nativeInt
 
+any :: Fqn
+any = Fqn { content = "any" }
+
 nativeInt :: Fqn
 nativeInt = Fqn { content = "int" }
 

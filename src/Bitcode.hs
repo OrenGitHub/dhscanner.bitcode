@@ -92,9 +92,9 @@ locationVariable v = case v of
 data CallContent
    = CallContent
      {
-         callOutput :: TmpVariable,
-         callee :: TmpVariable,
-         args :: [ TmpVariable ]
+         callOutput :: Variable,
+         callee :: Variable,
+         args :: [ Variable ]
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -146,7 +146,7 @@ data AssignContent
    = AssignContent
      {
          assignOutput :: Variable,
-         assignInput :: TmpVariable
+         assignInput :: Variable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -186,7 +186,6 @@ data ParamDeclContent
 -- some instructions don't have an output variable
 -- at any case, there is at most one output (unlike inputs)
 output :: InstructionContent -> Maybe Variable
-output (Call       c) = Just $ TmpVariableCtor $ callOutput       c
 output (Unop       c) = Just $ TmpVariableCtor $ unopLhs          c
 output (Binop      c) = Just $ TmpVariableCtor $ binopOutput      c
 output (Assign     c) = Just $                   assignOutput     c
@@ -200,7 +199,6 @@ inputs :: InstructionContent -> Set TmpVariable
 inputs (Call       c) = Data.Set.fromList  $ callInputs       c
 inputs (Binop      c) = Data.Set.fromList  $ binopInputs      c
 inputs (Unop       c) = Data.Set.singleton $ unopLhs          c
-inputs (Assign     c) = Data.Set.singleton $ assignInput      c
 inputs (FieldRead  c) = Data.Set.singleton $ fieldReadInput   c
 inputs (FieldWrite c) = Data.Set.singleton $ fieldWriteOutput c
 inputs              _ = Data.Set.empty
