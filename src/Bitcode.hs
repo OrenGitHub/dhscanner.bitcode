@@ -42,7 +42,9 @@ data InstructionContent
    | Assume AssumeContent
    | Return ReturnContent
    | Assign AssignContent
-   | LoadImm LoadImmContent
+   | LoadImmStr StrContent
+   | LoadImmInt IntContent
+   | LoadImmBool BoolContent
    | ParamDecl ParamDeclContent
    | FieldRead FieldReadContent
    | FieldWrite FieldWriteContent
@@ -71,6 +73,10 @@ data Variable
    = TmpVariableCtor TmpVariable
    | SrcVariableCtor SrcVariable
    deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+variableFqn :: Variable -> Fqn
+variableFqn (TmpVariableCtor (TmpVariable fqn _)) = fqn
+variableFqn (SrcVariableCtor (SrcVariable fqn _)) = fqn
 
 -- | Can /not/ be serialized to JSON
 data Variables = Variables { actualVariables :: Set Variable } deriving ( Show, Eq, Ord )
@@ -150,17 +156,35 @@ data AssignContent
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-data LoadImmContent
-   = LoadImmContentInt TmpVariable Token.ConstInt
-   | LoadImmContentStr TmpVariable String
-   | LoadImmContentBool TmpVariable Bool
-   deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+data IntContent
+   = IntContent
+     {
+         loadImmIntOutput :: TmpVariable,
+         loadImmIntValue :: Token.ConstInt
+     }
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+data StrContent
+   = StrContent
+     {
+         loadImmStrOutput :: TmpVariable,
+         loadImmStrValue :: Token.ConstStr
+     }
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+data BoolContent
+   = BoolContent
+     {
+         loadImmBoolOutput :: TmpVariable,
+         loadImmBoolValue :: Token.ConstBool
+     }
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data FieldReadContent
    = FieldReadContent
      {
-         fieldReadOutput :: TmpVariable,
-         fieldReadInput :: TmpVariable,
+         fieldReadOutput :: Variable,
+         fieldReadInput :: Variable,
          fieldReadName :: Token.FieldName
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
@@ -189,7 +213,6 @@ output :: InstructionContent -> Maybe Variable
 output (Unop       c) = Just $ TmpVariableCtor $ unopLhs          c
 output (Binop      c) = Just $ TmpVariableCtor $ binopOutput      c
 output (Assign     c) = Just $                   assignOutput     c
-output (FieldRead  c) = Just $ TmpVariableCtor $ fieldReadOutput  c
 output (FieldWrite c) = Just $ TmpVariableCtor $ fieldWriteOutput c
 output _              = Nothing
 
@@ -199,7 +222,6 @@ inputs :: InstructionContent -> Set TmpVariable
 inputs (Call       c) = Data.Set.fromList  $ callInputs       c
 inputs (Binop      c) = Data.Set.fromList  $ binopInputs      c
 inputs (Unop       c) = Data.Set.singleton $ unopLhs          c
-inputs (FieldRead  c) = Data.Set.singleton $ fieldReadInput   c
 inputs (FieldWrite c) = Data.Set.singleton $ fieldWriteOutput c
 inputs              _ = Data.Set.empty
 
