@@ -55,7 +55,10 @@ data Cfg
          exit  :: Node,
          edges :: Edges
      }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON )
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+location :: Cfg -> Location
+location = Bitcode.location . theInstructionInside . entry
 
 nodes :: Cfg -> Nodes
 nodes g = Nodes { actualNodes = nodes' `union` nodes'' }

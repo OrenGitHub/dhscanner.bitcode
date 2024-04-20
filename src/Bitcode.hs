@@ -69,14 +69,42 @@ data SrcVariable
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
+data ArgContent
+   = ArgContent
+     {
+         argVariableFqn :: Fqn,
+         argVariableSerialIdx :: Word,
+         -- location is indicative to the call
+         -- this arg was generated for
+         argVariableMyAwesomeCallContext :: Location
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+data ParamContent
+   = ParamContent
+     {
+         paramVariable :: Fqn,
+         paramVariableSerialIdx :: Word,
+         paramVariableToken :: Token.ParamName,
+         -- location is indicative to the callable
+         -- this param belongs to. note, that not
+         -- all callables have params (script callables),
+         -- but, all params do have a callable.
+         paramVariableMyAwesomeCallableContext :: Location
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
 data Variable
    = TmpVariableCtor TmpVariable
    | SrcVariableCtor SrcVariable
+   | Param ParamContent
+   | Arg ArgContent
    deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 variableFqn :: Variable -> Fqn
 variableFqn (TmpVariableCtor (TmpVariable fqn _)) = fqn
 variableFqn (SrcVariableCtor (SrcVariable fqn _)) = fqn
+variableFqn _ = Fqn "blah"
 
 -- | Can /not/ be serialized to JSON
 data Variables = Variables { actualVariables :: Set Variable } deriving ( Show, Eq, Ord )

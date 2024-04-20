@@ -6,23 +6,58 @@ module Callable
 
 where
 
+-- project imports
 import Cfg
 import Fqn
+import Token
+import Location
 
+-- general imports
+import Data.Set
 import Data.Aeson
 import GHC.Generics
-
-data Callable
-   = Callable
-     {
-         fqn :: Fqn,
-         cfg :: Cfg
-     }
-     deriving ( Show, Generic, ToJSON, FromJSON )
 
 data Callables
    = Callables
      {
          actualCallables :: [ Callable ]
      }
-     deriving ( Show, Generic, ToJSON, FromJSON )
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+data Callable
+   = Method MethodContent
+   | Lambda LambdaContent
+   | Script ScriptContent
+   | Function FunctionContent
+   deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+data MethodContent
+   = MethodContent
+     {
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+data LambdaContent
+   = LambdaContent
+     {
+         lambdaBody :: Cfg,
+         lambdaLocation :: Location
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+data ScriptContent
+   = ScriptContent
+     {
+         filename :: String,
+         scriptBody :: Cfg
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+data FunctionContent
+   = FunctionContent
+     {
+         funcName :: Token.FuncName,
+         funcBody :: Cfg
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
