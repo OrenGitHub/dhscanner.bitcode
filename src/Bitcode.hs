@@ -128,7 +128,8 @@ data CallContent
      {
          callOutput :: Variable,
          callee :: Variable,
-         args :: [ Variable ]
+         args :: [ Variable ],
+         callLocation :: Location
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
