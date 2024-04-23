@@ -80,24 +80,19 @@ data ArgContent
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
-data ParamContent
-   = ParamContent
+data ParamVariable
+   = ParamVariable
      {
-         paramVariable :: Fqn,
+         paramVariableFqn :: Fqn,
          paramVariableSerialIdx :: Word,
-         paramVariableToken :: Token.ParamName,
-         -- location is indicative to the callable
-         -- this param belongs to. note, that not
-         -- all callables have params (script callables),
-         -- but, all params do have a callable.
-         paramVariableMyAwesomeCallableContext :: Location
+         paramVariableToken :: Token.ParamName
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 data Variable
    = TmpVariableCtor TmpVariable
    | SrcVariableCtor SrcVariable
-   | Param ParamContent
+   | ParamVariableCtor ParamVariable
    | Arg ArgContent
    deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
@@ -230,8 +225,7 @@ data FieldWriteContent
 data ParamDeclContent
    = ParamDeclContent
      {
-         paramDeclName :: Token.ParamName,
-         paramDeclSerialIdx :: Integer
+         paramVariable :: ParamVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
