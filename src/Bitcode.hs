@@ -97,8 +97,9 @@ data Variable
    deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 variableFqn :: Variable -> Fqn
-variableFqn (TmpVariableCtor (TmpVariable fqn _)) = fqn
-variableFqn (SrcVariableCtor (SrcVariable fqn _)) = fqn
+variableFqn (TmpVariableCtor   (TmpVariable   fqn _   )) = fqn
+variableFqn (SrcVariableCtor   (SrcVariable   fqn _   )) = fqn
+variableFqn (ParamVariableCtor (ParamVariable fqn _ _ )) = fqn
 variableFqn _ = Fqn "blah"
 
 -- | Can /not/ be serialized to JSON
