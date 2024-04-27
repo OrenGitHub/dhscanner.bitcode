@@ -118,6 +118,7 @@ locationVariable :: Variable -> Location
 locationVariable v = case v of
     (TmpVariableCtor tmpVariable) -> tmpVariableLocation tmpVariable
     (SrcVariableCtor srcVariable) -> Token.getVarNameLocation $ srcVariableToken srcVariable
+    (ParamVariableCtor paramVariable) -> Token.getParamNameLocation $ paramVariableToken paramVariable
 
 data CallContent
    = CallContent
