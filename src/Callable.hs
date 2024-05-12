@@ -57,7 +57,8 @@ data FunctionContent
    = FunctionContent
      {
          funcName :: Token.FuncName,
-         funcBody :: Cfg
+         funcBody :: Cfg,
+         funcLocation :: Location
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
