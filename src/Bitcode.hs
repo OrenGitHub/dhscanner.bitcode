@@ -156,16 +156,13 @@ data UnopContent
 data AssumeContent
    = AssumeContent
      {
-         assumeTmpVariable :: TmpVariable,
+         assumeVariable :: Variable,
          assumedValue :: Bool
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-mkAssumeInstruction :: TmpVariable -> Bool -> Instruction
-mkAssumeInstruction tmpVariable value = Instruction { location = l, instructionContent = assume }
-    where
-        l = tmpVariableLocation tmpVariable
-        assume = Assume $ AssumeContent { assumeTmpVariable = tmpVariable, assumedValue = value }
+mkAssumeInstruction :: Variable -> Bool -> Instruction
+mkAssumeInstruction v b = Instruction (locationVariable v) (Assume (AssumeContent v b))
 
 data ReturnContent
    = ReturnContent
