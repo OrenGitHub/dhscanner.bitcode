@@ -103,10 +103,10 @@ parallel g1 g2 = Cfg { entry = s, exit = t, edges = edges' }
                         g2_t = Edge { from = entry g2, to = t }
 
 -- | create a loop from condition and body
-loopify :: Cfg -> Cfg -> Bitcode.TmpVariable -> Cfg
+loopify :: Cfg -> Cfg -> Bitcode.Variable -> Cfg
 loopify cond body guardedValue = Cfg { entry = entry cond, exit = t, edges = edges' }
     where
-        t = Node $ Bitcode.mkNopInstruction (Bitcode.tmpVariableLocation guardedValue)
+        t = Node $ Bitcode.mkNopInstruction (Bitcode.locationVariable guardedValue)
         edges' = Edges $ edges1 `union` edges2 `union` connectors
             where
                 edges1 = actualEdges $ edges cond
