@@ -34,6 +34,9 @@ data Callable
 data MethodContent
    = MethodContent
      {
+         methodName :: Token.MethdName,
+         methodBody :: Cfg,
+         methodLocation :: Location
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
