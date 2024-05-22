@@ -136,14 +136,11 @@ callInputs callContent = []
 data BinopContent
    = BinopContent
      {
-         binopOutput :: TmpVariable,
-         binopLhs :: TmpVariable,
-         binopRhs :: TmpVariable
+         binopOutput :: Variable,
+         binopLhs :: Variable,
+         binopRhs :: Variable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
-
-binopInputs :: BinopContent -> [ TmpVariable ]
-binopInputs binopContent = [ binopLhs binopContent, binopRhs binopContent ]
 
 data UnopContent
    = UnopContent
@@ -233,7 +230,6 @@ data ParamDeclContent
 -- at any case, there is at most one output (unlike inputs)
 output :: InstructionContent -> Maybe Variable
 output (Unop       c) = Just $ TmpVariableCtor $ unopLhs          c
-output (Binop      c) = Just $ TmpVariableCtor $ binopOutput      c
 output (Assign     c) = Just $                   assignOutput     c
 output (FieldWrite c) = Just $ TmpVariableCtor $ fieldWriteOutput c
 output _              = Nothing
@@ -242,7 +238,6 @@ output _              = Nothing
 -- there can be /multiple/ input variables to an instruction
 inputs :: InstructionContent -> Set TmpVariable
 inputs (Call       c) = Data.Set.fromList  $ callInputs       c
-inputs (Binop      c) = Data.Set.fromList  $ binopInputs      c
 inputs (Unop       c) = Data.Set.singleton $ unopLhs          c
 inputs (FieldWrite c) = Data.Set.singleton $ fieldWriteOutput c
 inputs              _ = Data.Set.empty
