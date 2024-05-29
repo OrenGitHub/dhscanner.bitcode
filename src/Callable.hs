@@ -35,6 +35,7 @@ data MethodContent
    = MethodContent
      {
          methodName :: Token.MethdName,
+         hostingClassName :: Token.ClassName,
          methodBody :: Cfg,
          methodLocation :: Location
      }
