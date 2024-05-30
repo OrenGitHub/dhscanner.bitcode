@@ -48,6 +48,7 @@ data InstructionContent
    | ParamDecl ParamDeclContent
    | FieldRead FieldReadContent
    | FieldWrite FieldWriteContent
+   | SubscriptWrite SubscriptWriteContent
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 mkNopInstruction :: Location -> Instruction
@@ -215,6 +216,15 @@ data FieldWriteContent
          fieldWriteOutput :: TmpVariable,
          fieldWriteName :: Token.FieldName,
          fieldWriteInput :: TmpVariable
+     }
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+data SubscriptWriteContent
+   = SubscriptWriteContent
+     {
+         subscriptWriteOutput :: Variable,
+         subscriptWriteIdx :: Variable,
+         subscriptWriteInput :: Variable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
