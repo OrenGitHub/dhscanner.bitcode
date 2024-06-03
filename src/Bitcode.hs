@@ -48,6 +48,7 @@ data InstructionContent
    | ParamDecl ParamDeclContent
    | FieldRead FieldReadContent
    | FieldWrite FieldWriteContent
+   | SubscriptRead SubscriptReadContent
    | SubscriptWrite SubscriptWriteContent
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -216,6 +217,15 @@ data FieldWriteContent
          fieldWriteOutput :: TmpVariable,
          fieldWriteName :: Token.FieldName,
          fieldWriteInput :: TmpVariable
+     }
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+data SubscriptReadContent
+   = SubscriptReadContent
+     {
+         subscriptReadOutput :: Variable,
+         subscriptReadInput :: Variable,
+         subscriptReadIdx :: Variable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
