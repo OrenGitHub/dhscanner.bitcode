@@ -36,6 +36,7 @@ data MethodContent
      {
          methodName :: Token.MethdName,
          hostingClassName :: Token.ClassName,
+         hostingClassSupers :: [ Token.ClassName ],
          methodBody :: Cfg,
          methodLocation :: Location
      }
