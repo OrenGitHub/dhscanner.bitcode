@@ -58,11 +58,20 @@ data ScriptContent
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
+data Annotation
+   = Annotation
+     {
+         annotationFqn :: String,
+         annotationConstantStrings :: [ String ]
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
 data FunctionContent
    = FunctionContent
      {
          funcName :: Token.FuncName,
          funcBody :: Cfg,
+         funcAnnotations :: [ Annotation ],
          funcLocation :: Location
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
