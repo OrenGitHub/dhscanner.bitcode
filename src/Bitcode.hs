@@ -214,9 +214,9 @@ data FieldReadContent
 data FieldWriteContent
    = FieldWriteContent
      {
-         fieldWriteOutput :: TmpVariable,
+         fieldWriteOutput :: Variable,
          fieldWriteName :: Token.FieldName,
-         fieldWriteInput :: TmpVariable
+         fieldWriteInput :: Variable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -251,7 +251,6 @@ data ParamDeclContent
 output :: InstructionContent -> Maybe Variable
 output (Unop       c) = Just $ TmpVariableCtor $ unopLhs          c
 output (Assign     c) = Just $                   assignOutput     c
-output (FieldWrite c) = Just $ TmpVariableCtor $ fieldWriteOutput c
 output _              = Nothing
 
 -- some instructions don't have an input variable
@@ -259,7 +258,6 @@ output _              = Nothing
 inputs :: InstructionContent -> Set TmpVariable
 inputs (Call       c) = Data.Set.fromList  $ callInputs       c
 inputs (Unop       c) = Data.Set.singleton $ unopLhs          c
-inputs (FieldWrite c) = Data.Set.singleton $ fieldWriteOutput c
 inputs              _ = Data.Set.empty
 
 inputs' :: InstructionContent -> Set Variable
