@@ -20,7 +20,7 @@ description:
     in mind. The commands resemble an abstract RISC-style assembley, motivated by keeping
     later-phases analyses as simple as possible.
 
-version:            0.1.0.0
+version:            0.1.0.2
 license:            GPL-3.0-only
 license-file:       LICENSE
 author:             OrenGitHub
@@ -45,10 +45,10 @@ library
         Fqn
 
     build-depends:
-        aeson,
-        base,
-        containers,
-        dhscanner-ast
+        aeson >= 2.2.3 && < 2.3,
+        base >= 4.17.2 && < 4.18,
+        containers >= 0.6.7 && < 0.7,
+        dhscanner-ast >= 0.1.0.3 && < 0.2,
 
     hs-source-dirs:
         src

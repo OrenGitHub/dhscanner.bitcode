@@ -1,3 +1,37 @@
+-- |
+--
+-- * The [intermediate language (IL) \/ intermediate representation (IR) \/ bitcode](https://en.wikipedia.org/wiki/Intermediate_representation#Intermediate_language)
+-- are all synonyms for:
+--
+--     * a data structure able to represent code originating from /multiple/ programming languages.
+--
+-- * Its main purpose is to serve as the:
+--
+--     * second step for /static code analysis/ 
+--     * part of the [dhscanner](https://github.com/OrenGitHub/dhscanner) framework for
+--       CI\/CD container security checks 🔒 and
+--       [PII](https://en.wikipedia.org/wiki/Personal_data) leaks detection 🪪
+--
+-- * As part of the [dhscanner](https://github.com/OrenGitHub/dhscanner) framework:
+--
+--     * targets mostly languages used for /cloud native applications/ ☁️
+--     * Python, Ruby 💎, Php, Javascript, Typescript, Java ☕️, C# and Golang.
+--
+-- * Typical flow:
+--
+--     * the 'Asts' (collection of all 'Ast' objects from some code base) are sent for code generation
+--
+--         * received through REST API as a JSON http request
+--         * 'Callable' entities are identified
+--         * each 'Callable' is associated with its control flow graph ('Cfg')
+--
+--     * the collection of all 'Callables' is returned
+--
+-- * Non Haskell parogrammers note:
+--
+--     * Each 'Callable' object is /immutable/ ( like everything else in Haskell ... )
+--
+
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -22,7 +56,7 @@ import qualified Data.Set
 -- |
 -- * All instructions have an associated location
 --
--- * That is true also for instrumented instructions (like `Nop` and `Assume`)
+-- * That is also true for instrumented instructions (like `Nop` and `Assume`)
 --
 data Instruction
    = Instruction
@@ -32,8 +66,9 @@ data Instruction
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
--- | A minimal instruction set to translate /any/ programming language
--- to an intermediate langauge ready for static analysis
+-- |
+-- A minimal instruction set for translating cloud native programming languages and
+-- enabling easier static analysis
 data InstructionContent
    = Nop
    | Call CallContent
@@ -132,9 +167,6 @@ data CallContent
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-callInputs :: CallContent -> [ TmpVariable ]
-callInputs callContent = []
-
 data BinopContent
    = BinopContent
      {
@@ -147,8 +179,8 @@ data BinopContent
 data UnopContent
    = UnopContent
      {
-         unopOutput :: TmpVariable,
-         unopLhs :: TmpVariable
+         unopOutput :: Variable,
+         unopLhs :: Variable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -166,7 +198,7 @@ mkAssumeInstruction v b = Instruction (locationVariable v) (Assume (AssumeConten
 data ReturnContent
    = ReturnContent
      {
-         returnValue :: Maybe TmpVariable
+         returnValue :: Maybe Variable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -246,25 +278,35 @@ data ParamDeclContent
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 
--- some instructions don't have an output variable
--- at any case, there is at most one output (unlike inputs)
+-- |
+--
+-- * some instructions don't have an output variable
+--
+--     * 'Nop', 'Assume', 'Return' etc.
+--
+-- * other instructions have /exactly one/ output variable
+--
 output :: InstructionContent -> Maybe Variable
-output (Unop       c) = Just $ TmpVariableCtor $ unopLhs          c
-output (Assign     c) = Just $                   assignOutput     c
+output (Unop          c) = Just $ unopOutput          c
+output (Call          c) = Just $ callOutput          c
+output (Binop         c) = Just $ binopOutput         c
+output (Assign        c) = Just $ assignOutput        c
+output (FieldRead     c) = Just $ fieldReadOutput     c
+output (SubscriptRead c) = Just $ subscriptReadOutput c
 output _              = Nothing
 
--- some instructions don't have an input variable
--- there can be /multiple/ input variables to an instruction
-inputs :: InstructionContent -> Set TmpVariable
-inputs (Call       c) = Data.Set.fromList  $ callInputs       c
-inputs (Unop       c) = Data.Set.singleton $ unopLhs          c
+-- |
+--
+-- * some instructions don't have input variables /at all/
+--
+-- * other instructions have /multiple/ input variables
+--
+inputs :: InstructionContent -> Set Variable
+inputs (Call       c) = Data.Set.fromList (args c)
 inputs              _ = Data.Set.empty
-
-inputs' :: InstructionContent -> Set Variable
-inputs' = (Data.Set.map TmpVariableCtor) . inputs
 
 variables :: InstructionContent -> Set Variable
 variables instruction = case output instruction of
-    Nothing -> inputs' instruction
-    Just output' -> (Data.Set.singleton output') `Data.Set.union` (inputs' instruction)
+    Nothing -> inputs instruction
+    Just oneOutput -> (Data.Set.singleton oneOutput) `Data.Set.union` (inputs instruction)
 
