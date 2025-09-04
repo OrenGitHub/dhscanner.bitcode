@@ -56,9 +56,9 @@ data Callable
 data MethodContent
    = MethodContent
      {
-         methodName :: Token.MethdName,
+         methodName :: Token.MethodName,
          hostingClassName :: Token.ClassName,
-         hostingClassSupers :: [ Token.SuperName ],
+         hostingClassSupers :: [ Fqn ],
          methodBody :: Cfg,
          methodLocation :: Location
      }

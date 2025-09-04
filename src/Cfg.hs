@@ -72,7 +72,7 @@ preds node g = Nodes { actualNodes = map from edges' }
         edges' = filter (\e -> (to e) == node) (actualEdges (edges g))    
 
 empty :: Location -> Cfg
-empty location = atom (Node (Bitcode.Instruction location Bitcode.Nop))
+empty _location = atom (Node (Bitcode.Instruction _location Bitcode.Nop))
 
 atom :: Node -> Cfg
 atom node = Cfg { entry = node, exit = node, edges = mkEmptyCollectionOfEdges }

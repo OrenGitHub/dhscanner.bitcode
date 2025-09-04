@@ -20,7 +20,7 @@ description:
     in mind. The commands resemble an abstract RISC-style assembley, motivated by keeping
     later-phases analyses as simple as possible.
 
-version:            0.1.0.2
+version:            1.0.7
 license:            GPL-3.0-only
 license-file:       LICENSE
 author:             OrenGitHub
@@ -30,13 +30,13 @@ homepage:           https://github.com/OrenGitHub/dhscanner
 stability:          experimental
 build-type:         Simple
 
-common warnings
-    ghc-options: -Wall
+common ghc_options
+    ghc-options: -Wall -O2
 
 library
 
     import:
-        warnings
+        ghc_options
 
     exposed-modules:
         Bitcode,
@@ -45,10 +45,10 @@ library
         Fqn
 
     build-depends:
-        aeson >= 2.2.3 && < 2.3,
-        base >= 4.17.2 && < 4.18,
-        containers >= 0.6.7 && < 0.7,
-        dhscanner-ast >= 0.1.0.3 && < 0.2,
+        aeson,
+        base >=4.17 && <=4.20,
+        containers,
+        dhscanner-ast >= 1.1.0,
 
     hs-source-dirs:
         src
@@ -59,7 +59,7 @@ library
 test-suite dhscanner-bitcode-test
 
     import:
-        warnings
+        ghc_options
 
     type:
         exitcode-stdio-1.0

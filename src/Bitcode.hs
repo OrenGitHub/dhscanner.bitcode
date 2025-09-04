@@ -4,12 +4,14 @@
 -- are all synonyms for:
 --
 --     * a data structure able to represent code originating from /multiple/ programming languages.
+--     * minimal instruction set, similar in spirit to [RISC](https://en.wikipedia.org/wiki/Reduced_instruction_set_computer) architectures
+--     * unlike /actual/ assembly, it has an /infinite/ number of temporaries ( instead of registers )
 --
 -- * Its main purpose is to serve as the:
 --
 --     * second step for /static code analysis/ 
 --     * part of the [dhscanner](https://github.com/OrenGitHub/dhscanner) framework for
---       CI\/CD container security checks 🔒 and
+--       static analysis performing security checks 🔒 and
 --       [PII](https://en.wikipedia.org/wiki/Personal_data) leaks detection 🪪
 --
 -- * As part of the [dhscanner](https://github.com/OrenGitHub/dhscanner) framework:
@@ -19,13 +21,11 @@
 --
 -- * Typical flow:
 --
---     * the 'Asts' (collection of all 'Ast' objects from some code base) are sent for code generation
+--     * Abstract syntax trees (ASTs) are scanned
 --
---         * received through REST API as a JSON http request
 --         * 'Callable' entities are identified
 --         * each 'Callable' is associated with its control flow graph ('Cfg')
---
---     * the collection of all 'Callables' is returned
+--         * control flow graphs are directed, connecting bitcode instructions
 --
 -- * Non Haskell parogrammers note:
 --
@@ -67,8 +67,7 @@ data Instruction
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 -- |
--- A minimal instruction set for translating cloud native programming languages and
--- enabling easier static analysis
+-- A minimal instruction set for translating common programming languages
 data InstructionContent
    = Nop
    | Call CallContent
@@ -80,9 +79,11 @@ data InstructionContent
    | LoadImmStr StrContent
    | LoadImmInt IntContent
    | LoadImmBool BoolContent
+   | LoadImmNull NullContent
    | ParamDecl ParamDeclContent
    | FieldRead FieldReadContent
    | FieldWrite FieldWriteContent
+   | UnresolvedRef UnresolvedRefContent -- ^ @since 1.0.5
    | SubscriptRead SubscriptReadContent
    | SubscriptWrite SubscriptWriteContent
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
@@ -106,22 +107,11 @@ data SrcVariable
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
-data ArgContent
-   = ArgContent
-     {
-         argVariableFqn :: Fqn,
-         argVariableSerialIdx :: Word,
-         -- location is indicative to the call
-         -- this arg was generated for
-         argVariableMyAwesomeCallContext :: Location
-     }
-     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
-
 data ParamVariable
    = ParamVariable
      {
          paramVariableFqn :: Fqn,
-         paramVariableSerialIdx :: Word,
+         paramVariableSerialIdx :: Word, -- ^ zero-based
          paramVariableToken :: Token.ParamName
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
@@ -130,7 +120,6 @@ data Variable
    = TmpVariableCtor TmpVariable
    | SrcVariableCtor SrcVariable
    | ParamVariableCtor ParamVariable
-   | Arg ArgContent
    deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 variableFqn :: Variable -> Fqn
@@ -155,7 +144,7 @@ locationVariable :: Variable -> Location
 locationVariable v = case v of
     (TmpVariableCtor tmpVariable) -> tmpVariableLocation tmpVariable
     (SrcVariableCtor srcVariable) -> Token.getVarNameLocation $ srcVariableToken srcVariable
-    (ParamVariableCtor paramVariable) -> Token.getParamNameLocation $ paramVariableToken paramVariable
+    (ParamVariableCtor _paramVariable) -> Token.getParamNameLocation $ paramVariableToken _paramVariable
 
 data CallContent
    = CallContent
@@ -164,6 +153,15 @@ data CallContent
          callee :: Variable,
          args :: [ Variable ],
          callLocation :: Location
+     }
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+data UnresolvedRefContent
+   = UnresolvedRefContent
+     {
+         unresolvedRefOutput :: Variable,
+         unresolvedRef :: Variable,
+         unresolvedRefLocation :: Location
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -231,6 +229,14 @@ data BoolContent
      {
          loadImmBoolOutput :: TmpVariable,
          loadImmBoolValue :: Token.ConstBool
+     }
+     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+data NullContent
+   = NullContent
+     {
+         loadImmNullOutput :: TmpVariable,
+         loadImmNullValue :: Token.ConstNull
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 

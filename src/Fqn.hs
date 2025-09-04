@@ -22,3 +22,8 @@ nativeInt = Fqn { content = "int" }
 nativeStr :: Fqn
 nativeStr = Fqn { content = "str" }
 
+nativeBool :: Fqn
+nativeBool = Fqn { content = "bool" }
+
+nativeNull :: Fqn
+nativeNull = Fqn { content = "null" }
