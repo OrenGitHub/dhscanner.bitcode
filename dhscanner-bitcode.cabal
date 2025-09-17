@@ -20,7 +20,7 @@ description:
     in mind. The commands resemble an abstract RISC-style assembley, motivated by keeping
     later-phases analyses as simple as possible.
 
-version:            1.0.7
+version:            1.0.8
 license:            GPL-3.0-only
 license-file:       LICENSE
 author:             OrenGitHub
@@ -31,7 +31,7 @@ stability:          experimental
 build-type:         Simple
 
 common ghc_options
-    ghc-options: -Wall -O2
+    ghc-options: -Wall -Werror -O2
 
 library
 
@@ -48,7 +48,7 @@ library
         aeson,
         base >=4.17 && <=4.20,
         containers,
-        dhscanner-ast >= 1.1.0,
+        dhscanner-ast >= 1.1.1,
 
     hs-source-dirs:
         src

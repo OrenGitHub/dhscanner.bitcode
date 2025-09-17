@@ -46,12 +46,8 @@ import Location
 import qualified Token
 
 -- general imports
-import Data.Aeson
 import GHC.Generics
-import Data.Set ( Set )
-
--- general (qualified) imports
-import qualified Data.Set
+import Data.Aeson ( ToJSON, FromJSON )
 
 -- |
 -- * All instructions have an associated location
@@ -76,10 +72,6 @@ data InstructionContent
    | Assume AssumeContent
    | Return ReturnContent
    | Assign AssignContent
-   | LoadImmStr StrContent
-   | LoadImmInt IntContent
-   | LoadImmBool BoolContent
-   | LoadImmNull NullContent
    | ParamDecl ParamDeclContent
    | FieldRead FieldReadContent
    | FieldWrite FieldWriteContent
@@ -88,8 +80,17 @@ data InstructionContent
    | SubscriptWrite SubscriptWriteContent
    deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-mkNopInstruction :: Location -> Instruction
-mkNopInstruction l = Instruction { location = l, instructionContent = Nop }
+data Value
+   = VariableCtor Variable
+   | ConstValueCtor ConstValue
+   | KeywordArgCtor KeywordArgVariable
+   deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+data Variable
+   = TmpVariableCtor TmpVariable
+   | SrcVariableCtor SrcVariable
+   | ParamVariableCtor ParamVariable
+   deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 data TmpVariable
    = TmpVariable
@@ -116,42 +117,41 @@ data ParamVariable
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
-data Variable
-   = TmpVariableCtor TmpVariable
-   | SrcVariableCtor SrcVariable
-   | ParamVariableCtor ParamVariable
-   deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+data KeywordArgVariable
+   = KeywordArgVariable
+     {
+         keywordArgName :: String,
+         keywordArgValue :: Value
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 variableFqn :: Variable -> Fqn
 variableFqn (TmpVariableCtor   (TmpVariable   fqn _   )) = fqn
 variableFqn (SrcVariableCtor   (SrcVariable   fqn _   )) = fqn
 variableFqn (ParamVariableCtor (ParamVariable fqn _ _ )) = fqn
-variableFqn _ = Fqn "blah"
-
--- | Can /not/ be serialized to JSON
-data Variables = Variables { actualVariables :: Set Variable } deriving ( Show, Eq, Ord )
-
-data SrcVariables = SrcVariables { actualSrcVariables :: Set SrcVariable } deriving ( Show, Eq, Ord )
-
--- | Creating an empty collection of global variables
-createEmptyCollectionOfGlobalVariables :: SrcVariables
-createEmptyCollectionOfGlobalVariables = SrcVariables { actualSrcVariables = Data.Set.empty }
- 
--- | Can /not/ be serialized to JSON
-data TmpVariables = TmpVariables { actualTmpVariables :: Set TmpVariable } deriving ( Show, Eq, Ord )
 
 locationVariable :: Variable -> Location
-locationVariable v = case v of
-    (TmpVariableCtor tmpVariable) -> tmpVariableLocation tmpVariable
-    (SrcVariableCtor srcVariable) -> Token.getVarNameLocation $ srcVariableToken srcVariable
-    (ParamVariableCtor _paramVariable) -> Token.getParamNameLocation $ paramVariableToken _paramVariable
+locationVariable (TmpVariableCtor t) = tmpVariableLocation t
+locationVariable (SrcVariableCtor s) = Token.getVarNameLocation (srcVariableToken s)
+locationVariable (ParamVariableCtor p) = Token.getParamNameLocation (paramVariableToken p)
+
+locationValue :: Value -> Location
+locationValue (VariableCtor v) = locationVariable v
+locationValue (ConstValueCtor c) = locationConstValue c
+locationValue (KeywordArgCtor k) = locationValue (keywordArgValue k)
+
+locationConstValue :: ConstValue -> Location
+locationConstValue (ConstIntValue  i) = Token.constIntLocation  i
+locationConstValue (ConstStrValue  s) = Token.constStrLocation  s
+locationConstValue (ConstBoolValue b) = Token.constBoolLocation b
+locationConstValue (ConstNullValue n) = Token.constNullLocation n
 
 data CallContent
    = CallContent
      {
          callOutput :: Variable,
          callee :: Variable,
-         args :: [ Variable ],
+         args :: [ Value ],
          callLocation :: Location
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
@@ -169,8 +169,8 @@ data BinopContent
    = BinopContent
      {
          binopOutput :: Variable,
-         binopLhs :: Variable,
-         binopRhs :: Variable
+         binopLhs :: Value,
+         binopRhs :: Value
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -178,25 +178,28 @@ data UnopContent
    = UnopContent
      {
          unopOutput :: Variable,
-         unopLhs :: Variable
+         unopLhs :: Value
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data AssumeContent
    = AssumeContent
      {
-         assumeVariable :: Variable,
-         assumedValue :: Bool
+         assumeValue :: Value,
+         assumeTruthy :: Bool
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-mkAssumeInstruction :: Variable -> Bool -> Instruction
-mkAssumeInstruction v b = Instruction (locationVariable v) (Assume (AssumeContent v b))
+mkNopInstruction :: Location -> Instruction
+mkNopInstruction l = Instruction { location = l, instructionContent = Nop }
+
+mkAssumeInstruction :: Value -> Bool -> Instruction
+mkAssumeInstruction v b = Instruction (locationValue v) (Assume (AssumeContent v b))
 
 data ReturnContent
    = ReturnContent
      {
-         returnValue :: Maybe Variable
+         returnValue :: Maybe Value
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -204,41 +207,16 @@ data AssignContent
    = AssignContent
      {
          assignOutput :: Variable,
-         assignInput :: Variable
+         assignInput :: Value
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
-data IntContent
-   = IntContent
-     {
-         loadImmIntOutput :: TmpVariable,
-         loadImmIntValue :: Token.ConstInt
-     }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
-
-data StrContent
-   = StrContent
-     {
-         loadImmStrOutput :: TmpVariable,
-         loadImmStrValue :: Token.ConstStr
-     }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
-
-data BoolContent
-   = BoolContent
-     {
-         loadImmBoolOutput :: TmpVariable,
-         loadImmBoolValue :: Token.ConstBool
-     }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
-
-data NullContent
-   = NullContent
-     {
-         loadImmNullOutput :: TmpVariable,
-         loadImmNullValue :: Token.ConstNull
-     }
-     deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+data ConstValue
+   = ConstIntValue Token.ConstInt
+   | ConstStrValue Token.ConstStr
+   | ConstBoolValue Token.ConstBool
+   | ConstNullValue Token.ConstNull
+   deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
 data FieldReadContent
    = FieldReadContent
@@ -254,7 +232,7 @@ data FieldWriteContent
      {
          fieldWriteOutput :: Variable,
          fieldWriteName :: Token.FieldName,
-         fieldWriteInput :: Variable
+         fieldWriteInput :: Value
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -263,7 +241,7 @@ data SubscriptReadContent
      {
          subscriptReadOutput :: Variable,
          subscriptReadInput :: Variable,
-         subscriptReadIdx :: Variable
+         subscriptReadIdx :: Value
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -271,8 +249,8 @@ data SubscriptWriteContent
    = SubscriptWriteContent
      {
          subscriptWriteOutput :: Variable,
-         subscriptWriteIdx :: Variable,
-         subscriptWriteInput :: Variable
+         subscriptWriteIdx :: Value,
+         subscriptWriteInput :: Value
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
@@ -282,37 +260,3 @@ data ParamDeclContent
          paramVariable :: ParamVariable
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
-
-
--- |
---
--- * some instructions don't have an output variable
---
---     * 'Nop', 'Assume', 'Return' etc.
---
--- * other instructions have /exactly one/ output variable
---
-output :: InstructionContent -> Maybe Variable
-output (Unop          c) = Just $ unopOutput          c
-output (Call          c) = Just $ callOutput          c
-output (Binop         c) = Just $ binopOutput         c
-output (Assign        c) = Just $ assignOutput        c
-output (FieldRead     c) = Just $ fieldReadOutput     c
-output (SubscriptRead c) = Just $ subscriptReadOutput c
-output _              = Nothing
-
--- |
---
--- * some instructions don't have input variables /at all/
---
--- * other instructions have /multiple/ input variables
---
-inputs :: InstructionContent -> Set Variable
-inputs (Call       c) = Data.Set.fromList (args c)
-inputs              _ = Data.Set.empty
-
-variables :: InstructionContent -> Set Variable
-variables instruction = case output instruction of
-    Nothing -> inputs instruction
-    Just oneOutput -> (Data.Set.singleton oneOutput) `Data.Set.union` (inputs instruction)
-
