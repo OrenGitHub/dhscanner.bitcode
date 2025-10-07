@@ -53,12 +53,20 @@ data Callable
    | Function FunctionContent
    deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
+data HostingClassSuper
+   = HostingClassSuper
+     {
+         hostingClassSuperName :: Token.SuperName,
+         hostingClassSuperResolvedType :: Maybe Fqn
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
 data MethodContent
    = MethodContent
      {
          methodName :: Token.MethodName,
          hostingClassName :: Token.ClassName,
-         hostingClassSupers :: [ Fqn ],
+         hostingClassSupers :: [ HostingClassSuper ],
          methodBody :: Cfg,
          methodLocation :: Location
      }

@@ -41,8 +41,8 @@ nodes' = nodes'' . actualEdges
 nodes'' :: Set Edge -> Nodes
 nodes'' edges' = Nodes { actualNodes = (map from edges') `union` (map to edges') }
 
-atom :: Node -> Cfg
-atom node = Normal (Content { entry = node, exit = node, edges = emptySetOfEdges })
+atom :: Node -> Content
+atom node = Content { entry = node, exit = node, edges = emptySetOfEdges }
 
 concat :: Cfg -> Cfg -> Cfg
 concat Empty cfg = cfg
