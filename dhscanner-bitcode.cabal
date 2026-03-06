@@ -20,7 +20,7 @@ description:
     in mind. The commands resemble an abstract RISC-style assembley, motivated by keeping
     later-phases analyses as simple as possible.
 
-version:            1.0.10
+version:            1.0.14
 license:            GPL-3.0-only
 license-file:       LICENSE
 author:             OrenGitHub
@@ -48,7 +48,7 @@ library
         aeson,
         base >=4.17 && <=4.20,
         containers,
-        dhscanner-ast >= 1.1.2,
+        dhscanner-ast >= 1.1.4,
 
     hs-source-dirs:
         src
