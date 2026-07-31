@@ -21,20 +21,24 @@ import GHC.Generics
 -- * Unidirectional resolution only ( one pass )
 --
 data Fqn
-   = ClassInstance ClassInstanceContent
-   | ClassName ClassNameContent
-   | FieldedAccess Fqn Token.FieldName
-   | CallMethodOfClass Location String Token.ClassName
-   | FirstPartyImport FirstPartyImportContent
-   | ThirdPartyImport ThirdPartyImportContent
-   | NativeTypeInt
+   = NativeTypeInt
    | NativeTypeString
    | NativeTypeBool
+   | NativeTypeNull
    | NativeTypeConstInt Int
    | NativeTypeConstStr String
    | NativeTypeConstBool Bool
-   | NativeTypeNull
-   | Unknwon
+   | ClassName ClassNameContent
+   | ClassInstance ClassInstanceContent
+   | FieldedAccess Fqn Token.FieldName
+   | CallMethodOfClass Location String Token.ClassName
+   | CallMethodOfUntypedNamedParam Location String Token.ParamName
+   | CallFuncFromImportedDir Location String FilePath
+   | CallFuncFromImportedFile Location String FilePath
+   | FirstPartyImport FirstPartyImportContent
+   | FirstPartyDirImport FirstPartyDirImportContent
+   | ThirdPartyImport ThirdPartyImportContent
+   | Unknown
    deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 data FirstPartyImportContent
@@ -42,6 +46,14 @@ data FirstPartyImportContent
      {
          firstPartyImportedLocation :: FilePath,
          firstPartyImportedName :: Maybe String
+     }
+     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+data FirstPartyDirImportContent
+   = FirstPartyDirImportContent
+     {
+         firstPartyDirImportLocation :: FilePath,
+         firstPartyDirImportAlias :: Maybe String
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
