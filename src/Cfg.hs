@@ -69,7 +69,8 @@ mkNewExit = mkNopNode
 parallelNormalCfgs :: Content -> Content -> Cfg
 parallelNormalCfgs cfg1 cfg2 = let
     s = mkNewEntry (entry cfg1)
-    t = mkNewExit (exit cfg2)
+    -- exit node shares the exact location of the if statement
+    t = mkNewExit (entry cfg2)
     c1 = Edge { from = s, to = entry cfg1 }
     c2 = Edge { from = s, to = entry cfg2 }
     c3 = Edge { from = exit cfg1, to = t }
