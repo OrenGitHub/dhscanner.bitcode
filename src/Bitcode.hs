@@ -165,12 +165,24 @@ data UnresolvedRefContent
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
+-- | Coarse operator classification for 'BinopContent'. Only equality
+-- variants are distinguished; everything else collapses to 'OtherOp' so
+-- downstream analyses ( e.g. @kb_comparison@ in @dhscanner-kbgen@ ) can
+-- pick out gated-return-on-comparison patterns without carrying the full
+-- 'Ast.Operator' surface into the bitcode layer.
+data BinopOp
+   = EqOp
+   | NeqOp
+   | OtherOp
+   deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
 data BinopContent
    = BinopContent
      {
          binopOutput :: Variable,
          binopLhs :: Value,
-         binopRhs :: Value
+         binopRhs :: Value,
+         binopOperator :: BinopOp
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
 
