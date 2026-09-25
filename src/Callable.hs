@@ -68,7 +68,8 @@ data MethodContent
          hostingClassName :: Token.ClassName,
          hostingClassSupers :: [ HostingClassSuper ],
          methodBody :: Cfg,
-         methodLocation :: Location
+         methodLocation :: Location,
+         methodSourceBodyLength :: Word -- ^ number of source-level statements ( see @stmtMethodBody@ in "Ast" )
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
@@ -76,7 +77,8 @@ data LambdaContent
    = LambdaContent
      {
          lambdaBody :: Cfg,
-         lambdaLocation :: Location
+         lambdaLocation :: Location,
+         lambdaSourceBodyLength :: Word -- ^ number of source-level statements ( see @expLambdaBody@ in "Ast" )
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
@@ -102,7 +104,15 @@ data FunctionContent
          funcName :: Token.FuncName,
          funcBody :: Cfg,
          funcAnnotations :: [ Annotation ],
-         funcLocation :: Location
+         funcLocation :: Location,
+         funcSourceBodyLength :: Word -- ^ number of source-level statements ( see @stmtFuncBody@ in "Ast" )
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+
+-- | Number of source-level statements in the callable's body ( see "Ast" ). Returns @0@ for 'Script'.
+numOriginalSourceInstructions :: Callable -> Word
+numOriginalSourceInstructions (Method   m) = methodSourceBodyLength m
+numOriginalSourceInstructions (Lambda   l) = lambdaSourceBodyLength l
+numOriginalSourceInstructions (Function f) = funcSourceBodyLength   f
+numOriginalSourceInstructions (Script   _) = 0
 

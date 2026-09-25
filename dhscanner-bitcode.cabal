@@ -1,4 +1,4 @@
-cabal-version:      3.0
+cabal-version:      3.12
 name:               dhscanner-bitcode
 category:           sast
 synopsis:           Intermediate language for static code analysis
@@ -20,7 +20,7 @@ description:
     in mind. The commands resemble an abstract RISC-style assembley, motivated by keeping
     later-phases analyses as simple as possible.
 
-version:            1.1.0
+version:            2.1.1
 license:            GPL-3.0-only
 license-file:       LICENSE
 author:             OrenGitHub
@@ -45,16 +45,16 @@ library
         Fqn
 
     build-depends:
-        aeson,
-        base >=4.17 && <=4.20,
-        containers,
-        dhscanner-ast >= 1.1.5,
+        aeson >= 2.2 && < 2.4,
+        base >= 4.22 && < 4.23,
+        containers >= 0.8 && < 0.9,
+        dhscanner-ast >= 1.3.1 && < 1.4
 
     hs-source-dirs:
         src
 
     default-language:
-        Haskell2010
+        GHC2024
 
 test-suite dhscanner-bitcode-test
 
@@ -79,4 +79,4 @@ test-suite dhscanner-bitcode-test
         random
 
     default-language:
-        Haskell2010
+        GHC2024
