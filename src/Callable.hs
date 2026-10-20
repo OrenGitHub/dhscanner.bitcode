@@ -68,6 +68,7 @@ data MethodContent
          hostingClassName :: Token.ClassName,
          hostingClassSupers :: [ HostingClassSuper ],
          methodBody :: Cfg,
+         methodAnnotations :: [ Annotation ],
          methodLocation :: Location,
          methodSourceBodyLength :: Word -- ^ number of source-level statements ( see @stmtMethodBody@ in "Ast" )
      }
@@ -90,13 +91,7 @@ data ScriptContent
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
-data Annotation
-   = Annotation
-     {
-         annotationFqn :: String,
-         annotationConstantStrings :: [ String ]
-     }
-     deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
+data Annotation = Annotation Location deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 data FunctionContent
    = FunctionContent
