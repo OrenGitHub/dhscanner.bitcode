@@ -67,6 +67,7 @@ data MethodContent
          methodName :: Token.MethodName,
          hostingClassName :: Token.ClassName,
          hostingClassSupers :: [ HostingClassSuper ],
+         hostingClassAnnotations :: [ Annotation ],
          methodBody :: Cfg,
          methodAnnotations :: [ Annotation ],
          methodLocation :: Location,
