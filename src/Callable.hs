@@ -24,11 +24,10 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Callable
-
-where
+module Callable where
 
 -- project imports
+import Bitcode
 import Cfg
 import Fqn
 import Token
@@ -91,8 +90,6 @@ data ScriptContent
          scriptBody :: Cfg
      }
      deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
-
-data Annotation = Annotation Location deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
 
 data FunctionContent
    = FunctionContent

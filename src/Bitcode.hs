@@ -269,6 +269,12 @@ data SubscriptWriteContent
 data ParamDeclContent
    = ParamDeclContent
      {
-         paramVariable :: ParamVariable
+         paramVariable :: ParamVariable,
+         paramAnnotations :: [ Annotation ] -- ^ ( for example, Java Spring: @\@RequestParam@ )
      }
      deriving ( Show, Eq, Generic, ToJSON, FromJSON, Ord )
+
+-- | an annotation ( java @GetMapping, python decorator, ... ) is just its
+-- location : it is lowered as a call at that same location, so its fqn
+-- and args come from the call
+data Annotation = Annotation Location deriving ( Show, Eq, Ord, Generic, ToJSON, FromJSON )
